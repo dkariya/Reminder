@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password123
+    ports:
+      - "1433:1433"
+    networks:
+      - admin-net
+
+  api:
+    build:
+      context: .
+      dockerfile: AdminPanel.API/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AdminPanelDb;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;
+      - JwtSettings__Secret=YourSuperSecretKeyHere_MustBeLongEnoughOfAtLeast32Bytes
+      - JwtSettings__Issuer=AdminPanelAPI
+      - JwtSettings__Audience=AdminPanelClient
+      - JwtSettings__ExpiryInMinutes=60
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - admin-net
+
+  client:
+    build:
+      context: AdminPanel.Client
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - admin-net
+
+networks:
+  admin-net:
+    driver: bridge
